@@ -2,10 +2,12 @@ const { StatusCodes } = require('http-status-codes');
 const Conversation = require('../Models/conversations');
 const Message = require('../Models/messages');
 const { io, getReceiverSocketId } = require('../Socket/socket')
+const { v2 } = require('cloudinary')
 
 const sendMessages = async(req,res) => {
     try {
         const { message } = req.body;
+        let { img } = req.body;
         const { id:receiverId } = req.params;
         const senderId = req.user._id;
     
@@ -15,21 +17,27 @@ const sendMessages = async(req,res) => {
     
         if(!conversations) {
             conversations = await Conversation.create({
-                participants: [senderId,receiverId]   
-            })
+                participants: [senderId,receiverId],   
+            });
+        }
+
+        if(img) {
+            const uploadResponse = await v2.uploader.upload(img);
+            img = uploadResponse.secure_url;
         }
     
         const newMessage = new Message({
             senderId,
             receiverId,
             message,
+            img,
         });
     
         if(newMessage){
             conversations.messages.push(newMessage._id)
         }
     
-        await Promise.all[conversations.save(),newMessage.save()]
+        await Promise.all([conversations.save(),newMessage.save()])
 
         const receiverSocketId = getReceiverSocketId(receiverId);
         if(receiverSocketId) {
@@ -55,6 +63,7 @@ const getMessages = async(req,res) => {
         if(!conversations) return res.status(StatusCodes.OK).json([]);
 
         const messages = conversations.messages;
+        console.log("backend ",messages)
 
         res.status(StatusCodes.OK).json(messages);
     } catch (error) {

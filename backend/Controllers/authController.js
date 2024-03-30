@@ -2,10 +2,11 @@ const { StatusCodes } = require("http-status-codes");
 const User = require("../Models/user");
 const bcrypt = require("bcryptjs");
 const generateTokenAndSetCookie = require("../utils/generateToken");
+const { v2 } = require('cloudinary');
 
 const signup = async (req, res) => {
   try {
-    const { fullName, username, password, confirmPassword, gender } = req.body;
+    const { fullName, username, password, confirmPassword, gender, profilePic } = req.body;
     if (password !== confirmPassword) {
       return res.status(StatusCodes.BAD_REQUEST).send("Passwords dont match!!");
     }
@@ -18,17 +19,25 @@ const signup = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    let img = null;
 
-    const profilePic = `https://avatar.iran.liara.run/public/${
-      gender === "male" ? "boy" : "girl"
-    }?username=${username}`;
+    console.log(img)
+    if(!profilePic) {
+      img = `https://avatar.iran.liara.run/public/${
+        gender === "male" ? "boy" : "girl"
+      }?username=${username}`;
+    } else {
+      const uploadResponse = await v2.uploader.upload(profilePic);
+      img = uploadResponse.secure_url;
+    }
+
 
     const newUser = new User({
       fullName,
       username,
       password: hashedPassword,
       gender,
-      profilePic,
+      profilePic: img,
     });
 
     if (newUser) {

@@ -24,7 +24,6 @@ app.use('/api/auth',authRoutes);
 app.use('/api/message',messageRoutes);
 app.use('/api/users',userRoutes);
 
-
 server.listen(port, () => {
     connectToMongo(process.env.MONGO_DB_URI);
     console.log(`Server is listening on port ${port}...`)
